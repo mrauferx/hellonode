@@ -14,7 +14,7 @@ node {
             withCredentials([
                 string(credentialsId: 'AQUA_KEY', variable: 'AQUA_KEY'),
                 string(credentialsId: 'AQUA_SECRET', variable: 'AQUA_SECRET'),
-                string(credentialsId: 'githubtoken', variable: 'GITHUB_TOKEN')
+                string(credentialsId: 'githubtoken', variable: 'GITHUB_TOKEN'),
         //        usernamePassword(credentialsId: 'mygithub', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_TOKEN'),
                 usernamePassword(credentialsId: 'aquareg', usernameVariable: 'TRIVY_USERNAME', passwordVariable: 'TRIVY_PASSWORD')
             ]) {
