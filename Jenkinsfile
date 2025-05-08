@@ -14,8 +14,8 @@ node {
             withCredentials([
                 string(credentialsId: 'AQUA_KEY', variable: 'AQUA_KEY'),
                 string(credentialsId: 'AQUA_SECRET', variable: 'AQUA_SECRET'),
-        //        string(credentialsId: 'GITHUB_TOKEN', variable: 'GITHUB_TOKEN')
-                usernamePassword(credentialsId: 'mygithub', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_TOKEN'),
+                string(credentialsId: 'githubtoken', variable: 'GITHUB_TOKEN')
+        //        usernamePassword(credentialsId: 'mygithub', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_TOKEN'),
                 usernamePassword(credentialsId: 'aquareg', usernameVariable: 'TRIVY_USERNAME', passwordVariable: 'TRIVY_PASSWORD')
             ]) {
                 sh '''
@@ -82,7 +82,8 @@ node {
     stage('Manifest Generation') {
         withCredentials([
         // Replace GITHUB_APP_CREDENTIALS_ID with the id of your github app credentials
-            usernamePassword(credentialsId: 'mygithub', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_TOKEN'), 
+            // usernamePassword(credentialsId: 'mygithub', usernameVariable: 'GITHUB_APP', passwordVariable: 'GITHUB_TOKEN'), 
+            string(credentialsId: 'githubtoken', variable: 'GITHUB_TOKEN'), 
             string(credentialsId: 'AQUA_KEY', variable: 'AQUA_KEY'), 
             string(credentialsId: 'AQUA_SECRET', variable: 'AQUA_SECRET')
         ]) {
