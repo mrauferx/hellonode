@@ -99,5 +99,7 @@ jobs:
         # docker push quay.io/mmurhamm:${{ github.sha }}
 
       - name: Deploy to Kubernetes
-        run: echo "helm install ... quay.io/mmurhamm/${{ GITHUB_REPOSITORY }}:${{ GITHUB_RUN_NUMBER }} ..."
+        # see if helm is installed on runner
+        run: helm version
+        # echo "helm install ... quay.io/mmurhamm/${{ GITHUB_REPOSITORY }}:${{ GITHUB_RUN_NUMBER }} ..."
         # add helm later ...
