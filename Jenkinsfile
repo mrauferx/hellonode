@@ -38,7 +38,9 @@ node {
       
     stage('Build Image') {
     //    app = docker.build("mrauferx/hellonode")
-        app = docker.build("harbor.localdomain/mytest/hellonode")
+    //    app = docker.build("harbor.localdomain/mytest/hellonode")
+    // build to specifig build tag:
+        app = docker.build("harbor.localdomain/mytest/hellonode:${env.BUILD_NUMBER}")
     }
 
     stage ('Test Image') {
@@ -71,12 +73,7 @@ node {
     }
     end Twistlock */
 
-    stage('Push Image') {
-        docker.withRegistry('https://harbor.localdomain', 'harbor-credentials') {
-            app.push("${env.BUILD_NUMBER}")
-            app.push("latest")
-        }
-    }
+    // move push stage after manifest generation
     
     // Aqua scan stages start here
     stage('Manifest Generation') {
@@ -115,7 +112,14 @@ node {
         }
     }    
     // end Aqua
-        
+
+    stage('Push Image') {
+        docker.withRegistry('https://harbor.localdomain', 'harbor-credentials') {
+            app.push("${env.BUILD_NUMBER}")
+            app.push("latest")
+        }
+    }
+    
     stage('Deploy to Kubernetes') {
         withKubeConfig([credentialsId: 'default', serverUrl: 'https://192.168.30.10:6443']) {
             withCredentials([
