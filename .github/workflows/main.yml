@@ -39,7 +39,7 @@ jobs:
           # For http/https proxy configuration add env vars: HTTP_PROXY/HTTPS_PROXY, CA-CRET (path to CA certificate)
 
       - name: Build Docker Image
-        run: docker build -t "$GITHUB_REPOSITORY:$GITHUB_RUN_NUMBER" .
+        run: docker build -t "${{ GITHUB_REPOSITORY }}:${{ GITHUB_RUN_NUMBER }}" .
         # specify tag once registry/repo are known/ready; tag remains run number
 
       - name: Test Image
