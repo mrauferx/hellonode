@@ -7,3 +7,5 @@ Jenkinsfile.org
 README.md
 .sonarcloud.properties
 .git
+# Ignore generated credentials from google-github-actions/auth
+gha-creds-*.json
