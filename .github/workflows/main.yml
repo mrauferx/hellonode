@@ -39,8 +39,8 @@ jobs:
           # For http/https proxy configuration add env vars: HTTP_PROXY/HTTPS_PROXY, CA-CRET (path to CA certificate)
 
       - name: Build Docker Image
-        run: docker build -t "${{ github.repository }}:${{ github.run_number }}" .
-        # run: docker build -t "${{ GITHUB_REPOSITORY }}:${{ GITHUB_RUN_NUMBER }}" .
+        run: docker build -t "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" .
+        # run: docker build -t "${{ github.repository }}:${{ github.run_number }}" .
         # specify tag once registry/repo are known/ready; tag remains run number
 
       - name: Test Image
@@ -54,14 +54,14 @@ jobs:
         # using container scanner:
         run: |
           docker login registry.aquasec.com -u ${{ secrets.AQUA_REG_USER }} -p ${{ secrets.AQUA_REG_PW }}
-          docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local ${{ github.repository }}:${{ github.run_number }} --socket docker
+          docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker
           docker images
         # alternatively, using CLI scanner:
         # run: |
         #   wget --user ${{ secrets.AQUA_REG_USER }} --password ${{ secrets.AQUA_REG_PW }} https://download.aquasec.com/scanner/2022.4.720/scannercli
         #   chmod +x scannercli
         #   sudo mkdir /opt/aquascans
-        #   sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ ${{ github.repository }}:${{ github.run_number }} --local
+        #   sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --local
 
       - name: Manifest Generation
         run: |
@@ -75,35 +75,54 @@ jobs:
           BINDIR="." sh install.sh
           rm install.sh install.sh.checksum
           ./billy generate \
-            --access-token "${{ secrets.GITHUB_TOKEN }}" \
+            # --access-token "${{ secrets.GITHUB_TOKEN }}" \
+            --access-token "${{ github.token }}" \
             --aqua-key "${{ secrets.AQUA_KEY }}" \
             --aqua-secret "${{ secrets.AQUA_SECRET }}" \
             --cspm-url https://eu-1.api.cloudsploit.com \
-            --artifact-path "docker.io/${{ github.repository }}:${{ github.run_number }}" 
-            # --artifact-path "${{ github.repository }}:${{ github.run_number }}" 
+            --artifact-path "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" 
+            # --artifact-path "docker.io/${{ github.repository }}:${{ github.run_number }}" 
 
             # The docker image name:tag of the newly built image
             # --artifact-path "my-image-name:${{ env.tag-version }}" 
             # OR the path to the root folder of your project. I.e my-repo/my-app 
             # --artifact-path "${{env.MY_APP_ROOT}}"
 
-      - name: Tag Image with Registry
+      # - name: Tag Image with Registry
+        # use GAR later - setup too complicated ...
         # env:
-        run: |
-          docker tag ${{ github.repository }}:${{ github.run_number }} quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
-          docker images
+        # run: |
+          # docker tag ${{ github.repository }}:${{ github.run_number }} quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
 
       - name: Push to Registry
-        # env:
-        #   QUAY_USER: ${{ secrets.QUAY_USER }}
-        #   QUAY_PW: ${{ secrets.QUAY_PW }}
-        run: echo "docker push quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} ..."
-        # |
-        # docker login registry.aquasec.com -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PW }}
-        # docker push quay.io/mmurhamm:${{ github.sha }}
+        # use GAR later - setup too complicated ...
+        env:
+          QUAY_USER: ${{ secrets.QUAY_USER }}
+          QUAY_PW: ${{ secrets.QUAY_PW }}
+        # run: echo "docker push quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} ..."
+        run: |
+          docker login quay.io -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PW }}
+          docker push quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
+          helm version
 
-      - name: Deploy to Kubernetes
-        # see if helm is installed on runner
-        run: helm version
-        # echo "helm install ... quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} ..."
-        # add helm later ...
+      # wait for GKE cluster and helm chart adaptation
+      # - name: Install Helm
+      #   uses: azure/setup-helm@v4
+      # helm already available in runner
+      
+      #- name: Configure Kubeconfig
+      #  uses: azure/k8s-set-context@v4
+      #  with:
+      #    method: kubeconfig
+      #    kubeconfig: ${{ secrets.KUBECONFIG }}
+      
+      #- name: Deploy the Helm chart
+      #  run: |
+      #    helm upgrade \
+      #    ${{ github.event.repository.name }} \
+      #    helm \
+      #    --install \
+      #    --create-namespace \
+      #    --namespace ${{ github.event.repository.name }} \
+      #    --set image=quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} \
+      #    --set dockerConfigJson.data="\{\"auths\":\{\"quay.io\":\{\"username\":\"${{ secrets.QUAY_USER }}\"\,\"password\":\"${{ secrets.QUAY_PW }}\"\}\}\}"
