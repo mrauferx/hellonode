@@ -1,0 +1,9 @@
+apiVersion: v2
+name: hellonode
+description: A Helm chart for hellonode
+
+type: application
+
+version: 0.1.0
+
+appVersion: "0.36.0"
