@@ -125,25 +125,25 @@ jobs:
       #   uses: azure/setup-helm@v4
       # helm already available in runner
       
-      #- name: Configure Kubeconfig
-      #  uses: azure/k8s-set-context@v4
-      #  with:
-      #    method: kubeconfig
-      #    kubeconfig: ${{ secrets.KUBECONFIG }}
+      - name: Configure Kubeconfig
+        uses: azure/k8s-set-context@v4
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
       
-      #- name: Deploy the Helm chart
-      #  run: |
-      #    helm upgrade \
-      #    ${{ github.event.repository.name }} \
-      #    helm \
-      #    --install \
-      #    --create-namespace \
-      #    --namespace ${{ github.event.repository.name }} \
-      #    --set image.repository=quay.io/mmurhamm/${{ github.repository }} \
-      #    --set image.tag=${{ github.run_number }} \
-      #    --set imageCredentials.username=${{ secrets.QUAY_USER }}
-      #    --set imageCredentials.password=${{ secrets.QUAY_PW }}
-      #    --set imageCredentials.repositoryUriPrefix=quay.io
-      #    --set imageCredentials.registry=quay.io
+      - name: Deploy the Helm chart
+        run: |
+          helm upgrade \
+          ${{ github.event.repository.name }} \
+          helm \
+          --install \
+          --create-namespace \
+          --namespace ${{ github.event.repository.name }} \
+          --set image.repository=quay.io/mmurhamm/${{ github.repository }} \
+          --set image.tag=${{ github.run_number }} \
+          --set imageCredentials.username=${{ secrets.QUAY_USER }}
+          --set imageCredentials.password=${{ secrets.QUAY_PW }}
+          --set imageCredentials.repositoryUriPrefix=quay.io
+          --set imageCredentials.registry=quay.io
       #    --set dockerConfigJson.data="\{\"auths\":\{\"quay.io\":\{\"username\":\"${{ secrets.QUAY_USER }}\"\,\"password\":\"${{ secrets.QUAY_PW }}\"\}\}\}"
-
+      
