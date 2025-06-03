@@ -65,6 +65,12 @@ jobs:
         #   sudo mkdir /opt/aquascans
         #   sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --local
 
+      - name: Archive scan results
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-scan-report
+          path: artifacts/image-scan_${{ github.run_number }}.html
+
       - name: Manifest Generation
         run: |
           export BILLY_SERVER=https://billy.eu-1.codesec.aquasec.com
