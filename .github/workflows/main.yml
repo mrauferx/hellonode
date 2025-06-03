@@ -54,8 +54,8 @@ jobs:
         # using container scanner:
         run: |
           docker login registry.aquasec.com -u ${{ secrets.AQUA_REG_USER }} -p ${{ secrets.AQUA_REG_PW }}
-        # t.b.d. create artifact folder in repo and map as volume to save html scan output
           docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker
+        # t.b.d. create artifact folder in repo and map as volume to save html scan output
         # docker images
         # alternatively, using CLI scanner:
         # run: |
@@ -95,7 +95,7 @@ jobs:
         # run: |
           # docker tag ${{ github.repository }}:${{ github.run_number }} quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
 
-      #- name: Upload trivy report as a Github artifact
+      #- name: Upload Github artifacts
       #  uses: actions/upload-artifact@v4
       #  with:
       #    name: trivy-sbom-report
@@ -132,5 +132,11 @@ jobs:
       #    --install \
       #    --create-namespace \
       #    --namespace ${{ github.event.repository.name }} \
-      #    --set image=quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} \
+      #    --set image.repository=quay.io/mmurhamm/${{ github.repository }} \
+      #    --set image.tag=${{ github.run_number }} \
+      #    --set imageCredentials.username=${{ secrets.QUAY_USER }}
+      #    --set imageCredentials.password=${{ secrets.QUAY_PW }}
+      #    --set imageCredentials.repositoryUriPrefix=quay.io
+      #    --set imageCredentials.registry=quay.io
       #    --set dockerConfigJson.data="\{\"auths\":\{\"quay.io\":\{\"username\":\"${{ secrets.QUAY_USER }}\"\,\"password\":\"${{ secrets.QUAY_PW }}\"\}\}\}"
+
