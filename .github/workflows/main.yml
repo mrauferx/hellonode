@@ -1,15 +1,15 @@
 name: Manually Triggered Workflow
 on:
   workflow_dispatch:
-    inputs:
-      logLevel:
-        description: 'Log level'
-        required: false
-        default: 'warning'
-      environment:
-        description: 'Environment to deploy'
-        required: false
-        default: 'staging'
+    #inputs:
+    #  logLevel:
+    #    description: 'Log level'
+    #    required: false
+    #    default: 'warning'
+    #  environment:
+    #    description: 'Environment to deploy'
+    #    required: false
+    #    default: 'staging'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -54,8 +54,9 @@ jobs:
         # using container scanner:
         run: |
           docker login registry.aquasec.com -u ${{ secrets.AQUA_REG_USER }} -p ${{ secrets.AQUA_REG_PW }}
+        # t.b.d. create artifact folder in repo and map as volume to save html scan output
           docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker
-          docker images
+        # docker images
         # alternatively, using CLI scanner:
         # run: |
         #   wget --user ${{ secrets.AQUA_REG_USER }} --password ${{ secrets.AQUA_REG_PW }} https://download.aquasec.com/scanner/2022.4.720/scannercli
@@ -75,24 +76,31 @@ jobs:
           BINDIR="." sh install.sh
           rm install.sh install.sh.checksum
           ./billy generate \
-            # --access-token "${{ secrets.GITHUB_TOKEN }}" \
             --access-token "${{ github.token }}" \
             --aqua-key "${{ secrets.AQUA_KEY }}" \
             --aqua-secret "${{ secrets.AQUA_SECRET }}" \
             --cspm-url https://eu-1.api.cloudsploit.com \
             --artifact-path "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" 
             # --artifact-path "docker.io/${{ github.repository }}:${{ github.run_number }}" 
+            # --access-token "${{ secrets.GITHUB_TOKEN }}" \
 
             # The docker image name:tag of the newly built image
             # --artifact-path "my-image-name:${{ env.tag-version }}" 
             # OR the path to the root folder of your project. I.e my-repo/my-app 
             # --artifact-path "${{env.MY_APP_ROOT}}"
-
+        # t.b.d. create artifact folder in repo and map as volume to save sbom cyclone-dx output
       # - name: Tag Image with Registry
         # use GAR later - setup too complicated ...
         # env:
         # run: |
           # docker tag ${{ github.repository }}:${{ github.run_number }} quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
+
+      #- name: Upload trivy report as a Github artifact
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: trivy-sbom-report
+      #    path: '${{ github.workspace }}/dependency-results.sbom.json'
+      #    retention-days: 20 # 90 is the default
 
       - name: Push to Registry
         # use GAR later - setup too complicated ...
