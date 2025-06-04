@@ -51,11 +51,6 @@ jobs:
         run: |
           gcloud container clusters get-credentials autopilot-cluster-1 --region europe-west3
           gcloud auth configure-docker europe-west3-docker.pkg.dev
-          # GAR region set above
-          # cat ~/.docker/config.json
-          # export BASE64_KEY=$(base64 -w 0 ${{ secrets.GCP_CREDENTIALS }})
-          # export KEY_USER="_json_key_base64:"$BASE64_KEY
-          # echo $KEY_USER |base64 -w 0 > key.test
           helm upgrade \
           ${{ github.event.repository.name }} \
           helm \
@@ -66,6 +61,11 @@ jobs:
           --set image.tag=16 \
           --set dockerConfigJson.data="$(cat ~/.docker/config.json | base64 -w 0)"
        #   "\{\"auths\":\{\"europe-west3-docker.pkg.dev\":\{\"auth\":\"$(cat key.test)\"\}\}\}"
+          # GAR region set above
+          # cat ~/.docker/config.json
+          # export BASE64_KEY=$(base64 -w 0 ${{ secrets.GCP_CREDENTIALS }})
+          # export KEY_USER="_json_key_base64:"$BASE64_KEY
+          # echo $KEY_USER |base64 -w 0 > key.test
        #   --set imageCredentials.username="_json_key_base64" \
        #   --set imageCredentials.password=${{ secrets.GCP_CREDENTIALS }} \
        #   --set imageCredentials.repositoryUriPrefix=europe-west3-docker.pkg.dev \
