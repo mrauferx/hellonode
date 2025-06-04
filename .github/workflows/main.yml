@@ -129,7 +129,7 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}                            # gcp project name 
         #  service_account_key: ${{ secrets.GCP_CREDENTIALS }}               # key json from SA for GAR & GKE
           install_components: 'gke-gcloud-auth-plugin'                      # for kube auth to work
-          export_default_credentials: true                                  # ???
+        #  export_default_credentials: true                                  # ???
 
       - name: Use gcloud CLI
         run: gcloud info
