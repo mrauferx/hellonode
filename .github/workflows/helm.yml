@@ -25,52 +25,48 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT }}                            # gcp project name 
-        #  service_account_key: ${{ secrets.GCP_CREDENTIALS }}               # key json from SA for GAR & GKE
           install_components: 'gke-gcloud-auth-plugin'                      # for kube auth to work
-        #  export_default_credentials: true                                  # ???
 
       - name: Use gcloud CLI
         run: gcloud info
 
-      #- name: Push to Registry
-        # use GAR later - setup too complicated ...
-      #  env:
-      #    QUAY_USER: ${{ secrets.QUAY_USER }}
-      #    QUAY_PW: ${{ secrets.QUAY_PW }}
-        # run: echo "docker push quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} ..."
-      #  run: |
-      #    docker login quay.io -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PW }}
-      #    docker push quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
-      #    helm version
-      #- name: push to GAR
-      #  env:
-      #    GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
-      #  run: |
-      #    gcloud auth configure-docker europe-west3-docker.pkg.dev                  # set GAR region
-      #    docker push europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}
+      - name: Push to Registry
+        env:
+          QUAY_USER: ${{ secrets.QUAY_USER }}
+          QUAY_PW: ${{ secrets.QUAY_PW }}
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
+        run: |
+          docker login quay.io -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PW }}
+          docker pull quay.io/mmurhamm/${{ github.repository }}:16
+          docker tag quay.io/mmurhamm/${{ github.repository }}:16 europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:16
+          gcloud auth configure-docker europe-west3-docker.pkg.dev                  # set GAR region
+          docker push europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:16
 
       - name: deploy to gke
         env:
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
-          QUAY_USER: ${{ secrets.QUAY_USER }}
-          QUAY_PW: ${{ secrets.QUAY_PW }}
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                   # gcp project name 
+          GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+       #    QUAY_USER: ${{ secrets.QUAY_USER }}
+       #    QUAY_PW: ${{ secrets.QUAY_PW }}
         run: |
           gcloud container clusters get-credentials autopilot-cluster-1 --region europe-west3
-          # gcloud auth configure-docker europe-west3-docker.pkg.dev                 # set GAR region          
+          # gcloud auth configure-docker europe-west3-docker.pkg.dev                 # GAR region set above
           helm upgrade \
           ${{ github.event.repository.name }} \
           helm \
           --install \
           --create-namespace \
           --namespace ${{ github.event.repository.name }} \
-          --set image.repository=quay.io/mmurhamm/${{ github.repository }} \
-          --set image.tag=16 \
-          --set imageCredentials.username=${{ secrets.QUAY_USER }} \
-          --set imageCredentials.password=${{ secrets.QUAY_PW }} \
-          --set imageCredentials.repositoryUriPrefix=quay.io \
-          --set imageCredentials.registry=quay.io
-       #   --set image.repository=europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }} \
-       #   --set image.tag=${{ github.run_number }} \
-       #   --set imageCredentials.repositoryUriPrefix=europe-west3-docker.pkg.dev \
-       #   --set imageCredentials.registry=europe-west3-docker.pkg.dev
+          --set image.repository=europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }} \
+          --set image.tag=${{ github.run_number }} \
+          --set imageCredentials.username="_json_key_base64" \
+          --set imageCredentials.password=${{ secrets.GCP_CREDENTIALS }} \
+          --set imageCredentials.repositoryUriPrefix=europe-west3-docker.pkg.dev \
+          --set imageCredentials.registry=europe-west3-docker.pkg.dev
+       #   --set image.repository=quay.io/mmurhamm/${{ github.repository }} \
+       #   --set image.tag=16 \
+       #   --set imageCredentials.username=${{ secrets.QUAY_USER }} \
+       #   --set imageCredentials.password=${{ secrets.QUAY_PW }} \
+       #   --set imageCredentials.repositoryUriPrefix=quay.io \
+       #   --set imageCredentials.registry=quay.io
        #   --set dockerConfigJson.data="\{\"auths\":\{\"quay.io\":\{\"username\":\"${{ secrets.QUAY_USER }}\"\,\"password\":\"${{ secrets.QUAY_PW }}\"\}\}\}"
