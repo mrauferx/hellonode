@@ -65,12 +65,12 @@ jobs:
           --namespace ${{ github.event.repository.name }} \
           --set image.repository=quay.io/mmurhamm/${{ github.repository }} \
           --set image.tag=16 \
-          --set imageCredentials.username=${{ secrets.QUAY_USER }}
-          --set imageCredentials.password=${{ secrets.QUAY_PW }}
-          --set imageCredentials.repositoryUriPrefix=quay.io
+          --set imageCredentials.username=${{ secrets.QUAY_USER }} \
+          --set imageCredentials.password=${{ secrets.QUAY_PW }} \
+          --set imageCredentials.repositoryUriPrefix=quay.io \
           --set imageCredentials.registry=quay.io
        #   --set image.repository=europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }} \
        #   --set image.tag=${{ github.run_number }} \
-       #   --set imageCredentials.repositoryUriPrefix=europe-west3-docker.pkg.dev
+       #   --set imageCredentials.repositoryUriPrefix=europe-west3-docker.pkg.dev \
        #   --set imageCredentials.registry=europe-west3-docker.pkg.dev
        #   --set dockerConfigJson.data="\{\"auths\":\{\"quay.io\":\{\"username\":\"${{ secrets.QUAY_USER }}\"\,\"password\":\"${{ secrets.QUAY_PW }}\"\}\}\}"
