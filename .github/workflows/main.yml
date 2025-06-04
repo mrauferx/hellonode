@@ -40,6 +40,8 @@ jobs:
 
       - name: Build Docker Image
         run: docker build -t "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" .
+        # docker build -t "europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/aqua-test/${{ github.repository }}:${{ github.run_number }}" . 
+        # build & tag to GAR
         # run: docker build -t "${{ github.repository }}:${{ github.run_number }}" .
         # specify tag once registry/repo are known/ready; tag remains run number
 
@@ -55,6 +57,7 @@ jobs:
         run: |
           docker login registry.aquasec.com -u ${{ secrets.AQUA_REG_USER }} -p ${{ secrets.AQUA_REG_PW }}
           docker run -v ./artifacts:/tmp -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker --htmlfile /tmp/image-scan_${{ github.run_number }}.html
+        #  docker run -v ./artifacts:/tmp -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/aqua-test/${{ github.repository }}:${{ github.run_number }} --socket docker --htmlfile /tmp/image-scan_${{ github.run_number }}.html
         #  docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker
         # t.b.d. create artifact folder in repo and map as volume to save html scan output
         # docker images
@@ -87,10 +90,12 @@ jobs:
             --aqua-key "${{ secrets.AQUA_KEY }}" \
             --aqua-secret "${{ secrets.AQUA_SECRET }}" \
             --cspm-url https://eu-1.api.cloudsploit.com \
-            --artifact-path "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" 
+            --artifact-path "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" \
+            --output "./artifacts/"
+            # --artifact-path "europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}" \
+            # --output "./artifacts/sbom_${{ github.run_number }}.json"
             # --artifact-path "docker.io/${{ github.repository }}:${{ github.run_number }}" 
             # --access-token "${{ secrets.GITHUB_TOKEN }}" \
-
             # The docker image name:tag of the newly built image
             # --artifact-path "my-image-name:${{ env.tag-version }}" 
             # OR the path to the root folder of your project. I.e my-repo/my-app 
@@ -102,12 +107,23 @@ jobs:
         # run: |
           # docker tag ${{ github.repository }}:${{ github.run_number }} quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
 
-      #- name: Upload Github artifacts
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: trivy-sbom-report
-      #    path: '${{ github.workspace }}/dependency-results.sbom.json'
-      #    retention-days: 20 # 90 is the default
+      - name: Archive manifest files
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-manifests
+          path: |
+            artifacts
+            !artifacts/image-scan_${{ github.run_number }}.html
+        # artifacts/sbom_${{ github.run_number }}.json
+        # retention-days: 20 # 90 is the default
+
+      - name: install gcloud cli
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}                            # gcp project name 
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}               # key json from SA for GAR & GKE
+          install_components: 'gke-gcloud-auth-plugin'                      # for kube auth to work
+          export_default_credentials: true                                  # ???
 
       - name: Push to Registry
         # use GAR later - setup too complicated ...
@@ -118,21 +134,34 @@ jobs:
         run: |
           docker login quay.io -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PW }}
           docker push quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
-          helm version
+      #    helm version
+      #- name: push to GAR
+      #  env:
+      #    GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
+      #  run: |
+      #    gcloud auth configure-docker europe-west3-docker.pkg.dev                  # set GAR region
+      #    docker push europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}
 
       # wait for GKE cluster and helm chart adaptation
       # - name: Install Helm
       #   uses: azure/setup-helm@v4
       # helm already available in runner
       
-      - name: Configure Kubeconfig
-        uses: azure/k8s-set-context@v4
-        with:
-          method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG }}
-      
-      - name: Deploy the Helm chart
+      #- name: Configure Kubeconfig
+      #  uses: azure/k8s-set-context@v4
+      #  with:
+      #    method: kubeconfig
+      #    kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: deploy to gke
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
         run: |
+          gcloud container clusters get-credentials autopilot-cluster-1 --region europe-west3
+      #    gcloud auth configure-docker europe-west3-docker.pkg.dev                 # set GAR region          
+      # get cluster config
+      # - name: Deploy the Helm chart
+      #   run: |
           helm upgrade \
           ${{ github.event.repository.name }} \
           helm \
@@ -145,5 +174,9 @@ jobs:
           --set imageCredentials.password=${{ secrets.QUAY_PW }}
           --set imageCredentials.repositoryUriPrefix=quay.io
           --set imageCredentials.registry=quay.io
-      #    --set dockerConfigJson.data="\{\"auths\":\{\"quay.io\":\{\"username\":\"${{ secrets.QUAY_USER }}\"\,\"password\":\"${{ secrets.QUAY_PW }}\"\}\}\}"
+       #   --set image.repository=europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }} \
+       #   --set image.tag=${{ github.run_number }} \
+       #   --set imageCredentials.repositoryUriPrefix=europe-west3-docker.pkg.dev
+       #   --set imageCredentials.registry=europe-west3-docker.pkg.dev
+       #   --set dockerConfigJson.data="\{\"auths\":\{\"quay.io\":\{\"username\":\"${{ secrets.QUAY_USER }}\"\,\"password\":\"${{ secrets.QUAY_PW }}\"\}\}\}"
       
