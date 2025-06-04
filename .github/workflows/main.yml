@@ -91,9 +91,9 @@ jobs:
             --aqua-secret "${{ secrets.AQUA_SECRET }}" \
             --cspm-url https://eu-1.api.cloudsploit.com \
             --artifact-path "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" \
-            --output "./artifacts/"
+            --output "./artifacts/sbom_${{ github.run_number }}.json"
             # --artifact-path "europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}" \
-            # --output "./artifacts/sbom_${{ github.run_number }}.json"
+            # --output "./artifacts/"
             # --artifact-path "docker.io/${{ github.repository }}:${{ github.run_number }}" 
             # --access-token "${{ secrets.GITHUB_TOKEN }}" \
             # The docker image name:tag of the newly built image
@@ -111,19 +111,31 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sbom-manifests
-          path: |
-            artifacts
-            !artifacts/image-scan_${{ github.run_number }}.html
+          path: artifacts/sbom_${{ github.run_number }}.json
+        #    |
+        #    artifacts
+        #    !artifacts/image-scan_${{ github.run_number }}.html
         # artifacts/sbom_${{ github.run_number }}.json
         # retention-days: 20 # 90 is the default
 
-      - name: install gcloud cli
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
         with:
           project_id: ${{ secrets.GCP_PROJECT }}                            # gcp project name 
-          service_account_key: ${{ secrets.GCP_CREDENTIALS }}               # key json from SA for GAR & GKE
+        #  service_account_key: ${{ secrets.GCP_CREDENTIALS }}               # key json from SA for GAR & GKE
           install_components: 'gke-gcloud-auth-plugin'                      # for kube auth to work
           export_default_credentials: true                                  # ???
+
+      - name: Use gcloud CLI
+        run: gcloud info
+
+      #- name: install gcloud cli
+      #  uses: google-github-actions/setup-gcloud@v2
 
       - name: Push to Registry
         # use GAR later - setup too complicated ...
