@@ -158,10 +158,10 @@ jobs:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
         run: |
           gcloud container clusters get-credentials autopilot-cluster-1 --region europe-west3
-      #    gcloud auth configure-docker europe-west3-docker.pkg.dev                 # set GAR region          
-      # get cluster config
-      # - name: Deploy the Helm chart
-      #   run: |
+          #    gcloud auth configure-docker europe-west3-docker.pkg.dev                 # set GAR region          
+          # get cluster config
+          # - name: Deploy the Helm chart
+          #   run: |
           helm upgrade \
           ${{ github.event.repository.name }} \
           helm \
@@ -179,4 +179,3 @@ jobs:
        #   --set imageCredentials.repositoryUriPrefix=europe-west3-docker.pkg.dev
        #   --set imageCredentials.registry=europe-west3-docker.pkg.dev
        #   --set dockerConfigJson.data="\{\"auths\":\{\"quay.io\":\{\"username\":\"${{ secrets.QUAY_USER }}\"\,\"password\":\"${{ secrets.QUAY_PW }}\"\}\}\}"
-      
