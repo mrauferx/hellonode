@@ -25,10 +25,13 @@ imageCredentials:
     # then will be created a secret with name provided name
     create: true
     name: "hellonode-registry"
-    repositoryUriPrefix: "harbor.localdomain" # for dockerhub - "docker.io"
-    registry: "harbor.localdomain" #REQUIRED only if create is true, for dockerhub - "index.docker.io/v1/"
-    username: ""
-    password: ""
+    #repositoryUriPrefix: "harbor.localdomain" # for dockerhub - "docker.io"
+    #registry: "harbor.localdomain" #REQUIRED only if create is true, for dockerhub - "index.docker.io/v1/"
+    #username: ""
+    #password: ""
+# below is REQUIRED for registry pull secret for GAR    
+dockerConfigJson:
+    data: ""
 
 # This is to override the chart name.
 nameOverride: ""

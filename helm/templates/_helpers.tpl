@@ -72,6 +72,9 @@ Create the name of the image pull secret to use
 {{- end }}
 {{- end }}
 
+{{/*
+Create the nameregistry pull secret - not used due to complex escaping of GAR json
 {{- define "imagePullSecret" -}}
 {{- printf "{\"auths\": {\"%s\": {\"auth\": \"%s\"}}}" (required "A valid .Values.imageCredentials.registry entry required" .Values.imageCredentials.registry) (printf "%s:%s" (default "A valid .Values.imageCredentials.username entry" .Values.imageCredentials.username) (default "A valid .Values.imageCredentials.password entry" .Values.imageCredentials.password) | b64enc) | b64enc }}
 {{- end }}
+*/}}
