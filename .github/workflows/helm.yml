@@ -50,7 +50,8 @@ jobs:
        #    QUAY_PW: ${{ secrets.QUAY_PW }}
         run: |
           gcloud container clusters get-credentials autopilot-cluster-1 --region europe-west3
-          gcloud auth configure-docker europe-west3-docker.pkg.dev                 # GAR region set above
+          gcloud auth configure-docker europe-west3-docker.pkg.dev
+          # GAR region set above
           # cat ~/.docker/config.json
           # export BASE64_KEY=$(base64 -w 0 ${{ secrets.GCP_CREDENTIALS }})
           # export KEY_USER="_json_key_base64:"$BASE64_KEY
