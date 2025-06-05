@@ -145,7 +145,7 @@ jobs:
           --create-namespace \
           --namespace ${{ github.event.repository.name }} \
           --set image.repository=europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }} \
-          --set image.tag=16 \
+          --set image.tag=${{ github.run_number }} \
           --set dockerConfigJson.data="$(cat ~/.docker/config.json | base64 -w 0)"
        #   --set imageCredentials.username=${{ secrets.QUAY_USER }} \
        #   --set imageCredentials.password=${{ secrets.QUAY_PW }} \
