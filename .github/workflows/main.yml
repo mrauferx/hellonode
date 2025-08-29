@@ -136,7 +136,7 @@ jobs:
        #   QUAY_USER: ${{ secrets.QUAY_USER }}
        #   QUAY_PW: ${{ secrets.QUAY_PW }}          
         run: |
-          gcloud container clusters get-credentials autopilot-cluster-1 --region us-central1
+          gcloud container clusters get-credentials cluster-1 --zone us-central1-f --project ${{ secrets.GCP_PROJECT }}
           # gcloud auth configure-docker us-central1-docker.pkg.dev
           helm upgrade \
           ${{ github.event.repository.name }} \
