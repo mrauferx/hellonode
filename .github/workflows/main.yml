@@ -40,7 +40,7 @@ jobs:
 
       - name: Build Docker Image
         # build & tag to GAR
-        run: docker build -t "europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}" .
+        run: docker build -t "us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}" .
         # run: docker build -t "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" .
 
       - name: Test Image
@@ -54,14 +54,14 @@ jobs:
         # using container scanner:
         run: |
           docker login registry.aquasec.com -u ${{ secrets.AQUA_REG_USER }} -p ${{ secrets.AQUA_REG_PW }}
-          docker run -v ./artifacts:/tmp -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --socket docker --htmlfile /tmp/image-scan_${{ github.run_number }}.html
+          docker run -v ./artifacts:/tmp -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --socket docker --htmlfile /tmp/image-scan_${{ github.run_number }}.html
         #  docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker
         # alternatively, using CLI scanner:
         # run: |
         #   wget --user ${{ secrets.AQUA_REG_USER }} --password ${{ secrets.AQUA_REG_PW }} https://download.aquasec.com/scanner/2022.4.720/scannercli
         #   chmod +x scannercli
         #   sudo mkdir /opt/aquascans
-        #   sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local
+        #   sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local
 
       - name: Archive scan results
         uses: actions/upload-artifact@v4
@@ -86,7 +86,7 @@ jobs:
             --aqua-key "${{ secrets.AQUA_KEY }}" \
             --aqua-secret "${{ secrets.AQUA_SECRET }}" \
             --cspm-url https://eu-1.api.cloudsploit.com \
-            --artifact-path "europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}" \
+            --artifact-path "us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}" \
             --output "./artifacts/sbom_${{ github.run_number }}.json"
             # --artifact-path "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" \
             # --output "./artifacts/"
@@ -119,8 +119,8 @@ jobs:
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
         run: |
-          gcloud auth configure-docker europe-west3-docker.pkg.dev
-          docker push europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+          docker push us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}
       #  env:
       #    QUAY_USER: ${{ secrets.QUAY_USER }}
       #    QUAY_PW: ${{ secrets.QUAY_PW }}
@@ -136,15 +136,15 @@ jobs:
        #   QUAY_USER: ${{ secrets.QUAY_USER }}
        #   QUAY_PW: ${{ secrets.QUAY_PW }}          
         run: |
-          gcloud container clusters get-credentials autopilot-cluster-1 --region europe-west3
-          # gcloud auth configure-docker europe-west3-docker.pkg.dev
+          gcloud container clusters get-credentials autopilot-cluster-1 --region us-central1
+          # gcloud auth configure-docker us-central1-docker.pkg.dev
           helm upgrade \
           ${{ github.event.repository.name }} \
           helm \
           --install \
           --create-namespace \
           --namespace ${{ github.event.repository.name }} \
-          --set image.repository=europe-west3-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }} \
+          --set image.repository=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }} \
           --set image.tag=${{ github.run_number }} \
           --set dockerConfigJson.data="$(cat ~/.docker/config.json | base64 -w 0)"
        #   --set imageCredentials.username=${{ secrets.QUAY_USER }} \
