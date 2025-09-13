@@ -1,0 +1,22 @@
+name: Environment Workflow
+on:
+  workflow_dispatch:
+    #inputs:
+    #  logLevel:
+    #    description: 'Log level'
+    #    required: false
+    #    default: 'warning'
+    #  environment:
+    #    description: 'Environment to deploy'
+    #    required: false
+    #    default: 'staging'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # log system environment
+      - name: Print all environment variables
+        run: printenv

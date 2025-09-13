@@ -1,4 +1,4 @@
-name: Manually Triggered Workflow
+name: Build - Scan - Deploy Workflow
 on:
   workflow_dispatch:
     #inputs:
@@ -17,11 +17,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Download Code Scanner
+        run: docker pull aquasec/aqua-scanner
+
+      # log system environment to verify for next step what values could be used for name suffix and label in docker run command
+      - name: Print all environment variables
+        run: printenv
+
       - name: Scan Code
-        uses: docker://aquasec/aqua-scanner
-        with:
+        # not using below action to split into download and scan steps for timing purposes
+        # uses: docker://aquasec/aqua-scanner
+        # with:
           # adding credentials to use aqua registry for trivy db download instead of ghcr to avoid rate limit issues
-          args: trivy fs --scanners misconfig,vuln,secret,license --sast --reachability --db-repository=registry.aquasec.com/trivy-db:2 --checks-bundle-repository=registry.aquasec.com/trivy-checks:1 --java-db-repository=registry.aquasec.com/trivy-java-db:1 .
+          # args: trivy fs --scanners misconfig,vuln,secret,license --sast --reachability --db-repository=registry.aquasec.com/trivy-db:2 --checks-bundle-repository=registry.aquasec.com/trivy-checks:1 --java-db-repository=registry.aquasec.com/trivy-java-db:1 .
           # To customize what security issues to detect (vuln,misconfig,secret,license)
           # To customize which severities to scan for, add the following flag: --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
           # To enable SAST scanning, add: --sast
@@ -37,9 +45,22 @@ jobs:
           TRIVY_RUN_AS_PLUGIN: 'aqua'
           TRIVY_USERNAME: ${{ secrets.AQUA_REG_USER }}
           TRIVY_PASSWORD: ${{ secrets.AQUA_REG_PW }}
-          # For http/https proxy configuration add env vars: HTTP_PROXY/HTTPS_PROXY, CA-CRET (path to CA certificate)
+        run: |
+          docker run --name aquasecaquascanner_7f2305 --label 72fc80 --workdir /github/workspace --rm \
+          -e "AQUA_KEY" -e "AQUA_SECRET" -e "GITHUB_TOKEN" -e "AQUA_URL" -e "CSPM_URL" -e "TRIVY_RUN_AS_PLUGIN" -e "TRIVY_USERNAME" -e "TRIVY_PASSWORD" \
+          -e "INPUT_ARGS" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" \
+          -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" \
+          -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" \
+          -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKFLOW_REF" -e "GITHUB_WORKFLOW_SHA" -e "GITHUB_REPOSITORY_ID" -e "GITHUB_TRIGGERING_ACTOR" \
+          -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" \
+          -e "GITHUB_STEP_SUMMARY" -e "GITHUB_STATE" -e "GITHUB_OUTPUT" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_ENVIRONMENT" -e "RUNNER_TOOL_CACHE" \
+          -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e "ACTIONS_RESULTS_URL" \
+          -e GITHUB_ACTIONS=true -e CI=true \
+          -v "/var/run/docker.sock":"/var/run/docker.sock" -v "/home/runner/work/_temp/_github_home":"/github/home" -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" \
+          -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" -v "/home/runner/work/hellonode/hellonode":"/github/workspace" aquasec/aqua-scanner \
+          trivy fs --scanners misconfig,vuln,secret,license --sast --reachability --db-repository=registry.aquasec.com/trivy-db:2 --checks-bundle-repository=registry.aquasec.com/trivy-checks:1 --java-db-repository=registry.aquasec.com/trivy-java-db:1 .
 
-      - name: Build Application Image
+      - name: Build Image
         # build & tag to GAR
         run: docker build -t "us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}" .
         # run: docker build -t "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" .
@@ -47,22 +68,31 @@ jobs:
       - name: Test Image
         run: echo "Tests passed."
 
-      - name: Scan Image
+      - name: Download Image Scanner
         env:
           AQUA_REG_USER: ${{ secrets.AQUA_REG_USER }}
           AQUA_REG_PW: ${{ secrets.AQUA_REG_PW }}
-          SCANNER_TOKEN: ${{ secrets.SCANNER_TOKEN }}
         # using container scanner:
         #run: |
         #  docker login registry.aquasec.com -u ${{ secrets.AQUA_REG_USER }} -p ${{ secrets.AQUA_REG_PW }}
+        #  docker pull registry.aquasec.com/scanner:latest-saas
+        # alternatively, using CLI scanner:
+        run: |
+          wget --no-verbose --user ${{ secrets.AQUA_REG_USER }} --password ${{ secrets.AQUA_REG_PW }} https://download.aquasec.com/scanner/2507.4.21/scannercli
+          chmod +x scannercli
+          sudo mkdir /opt/aquascans
+
+      - name: Scan Image
+        env:
+        #  AQUA_REG_USER: ${{ secrets.AQUA_REG_USER }}
+        #  AQUA_REG_PW: ${{ secrets.AQUA_REG_PW }}
+          SCANNER_TOKEN: ${{ secrets.SCANNER_TOKEN }}
+        # using container scanner:
+        #run: |
         #  docker run -v ./artifacts:/tmp -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --socket docker --htmlfile /tmp/image-scan_${{ github.run_number }}.html
         #  docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker
         # alternatively, using CLI scanner:
-        run: |
-          wget --user ${{ secrets.AQUA_REG_USER }} --password ${{ secrets.AQUA_REG_PW }} https://download.aquasec.com/scanner/2507.4.21/scannercli
-          chmod +x scannercli
-          sudo mkdir /opt/aquascans
-          sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local --htmlfile ./artifacts/image-scan_${{ github.run_number }}.html
+        run: sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local --htmlfile ./artifacts/image-scan_${{ github.run_number }}.html
 
       - name: Archive scan results
         uses: actions/upload-artifact@v4
@@ -131,20 +161,32 @@ jobs:
       #    docker login quay.io -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PW }}
       #    docker push quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
 
-      - name: Deploy to GKE
+      # install google-cloud-cli-gke-gcloud-auth-plugin because it is not installed by default in the runner
+      - name: Install gke-gcloud-auth-plugin
         env:
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
-       #   GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-       #   QUAY_USER: ${{ secrets.QUAY_USER }}
-       #   QUAY_PW: ${{ secrets.QUAY_PW }}          
-       # first install google-cloud-cli-gke-gcloud-auth-plugin because it is not installed by default in the runner, then deploy
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                           # gcp project name 
         run: |
+          # gcloud components install gke-gcloud-auth-plugin
+          # gcloud components list
+          # curl -LO https://storage.googleapis.com/gke-gcloud-auth-plugin/releases/latest/linux/amd64/gke-gcloud-auth-plugin
+          # chmod +x gke-gcloud-auth-plugin
+          # sudo mv gke-gcloud-auth-plugin /usr/local/bin/
+          # gke-gcloud-auth-plugin --version
           echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
           sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
           curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
           sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
           sudo apt-get update
           sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin
+          # gke-gcloud-auth-plugin --version
+
+      - name: Deploy to GKE
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
+       #   GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+       #   QUAY_USER: ${{ secrets.QUAY_USER }}
+       #   QUAY_PW: ${{ secrets.QUAY_PW }}          
+        run: |
           gcloud container clusters get-credentials cluster-1 --zone us-central1-f --project ${{ secrets.GCP_PROJECT }}
           # gcloud auth configure-docker us-central1-docker.pkg.dev
           helm upgrade \
