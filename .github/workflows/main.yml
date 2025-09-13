@@ -46,7 +46,11 @@ jobs:
           TRIVY_USERNAME: ${{ secrets.AQUA_REG_USER }}
           TRIVY_PASSWORD: ${{ secrets.AQUA_REG_PW }}
         run: |
-          docker run --name aquasecaquascanner_7f2305 --label 72fc80 --workdir /github/workspace --rm \
+          DIGEST1=$(echo -n "$GITHUB_SHA" | sha1sum | cut -c1-6)
+          # echo "Short digest: $DIGEST1"
+          DIGEST2="aquasecaquascanner"_$(echo -n "$INVOCATION_ID" | sha1sum | cut -c1-6)
+          # echo "Name + short digest: $DIGEST2"
+          docker run --name $DIGEST2 --label $DIGEST1 --workdir /github/workspace --rm \
           -e "AQUA_KEY" -e "AQUA_SECRET" -e "GITHUB_TOKEN" -e "AQUA_URL" -e "CSPM_URL" -e "TRIVY_RUN_AS_PLUGIN" -e "TRIVY_USERNAME" -e "TRIVY_PASSWORD" \
           -e "INPUT_ARGS" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" \
           -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" \
