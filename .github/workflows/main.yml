@@ -21,8 +21,8 @@ jobs:
         run: docker pull aquasec/aqua-scanner
 
       # log system environment to verify for next step what values could be used for name suffix and label in docker run command
-      - name: Print all environment variables
-        run: printenv
+      #- name: Print all environment variables
+      #  run: printenv
 
       - name: Scan Code
         # not using below action to split into download and scan steps for timing purposes
