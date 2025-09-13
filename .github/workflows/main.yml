@@ -14,7 +14,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Scan Code
         uses: docker://aquasec/aqua-scanner
@@ -38,7 +39,7 @@ jobs:
           TRIVY_PASSWORD: ${{ secrets.AQUA_REG_PW }}
           # For http/https proxy configuration add env vars: HTTP_PROXY/HTTPS_PROXY, CA-CRET (path to CA certificate)
 
-      - name: Build Docker Image
+      - name: Build Application Image
         # build & tag to GAR
         run: docker build -t "us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }}" .
         # run: docker build -t "quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}" .
@@ -52,16 +53,16 @@ jobs:
           AQUA_REG_PW: ${{ secrets.AQUA_REG_PW }}
           SCANNER_TOKEN: ${{ secrets.SCANNER_TOKEN }}
         # using container scanner:
-        run: |
-          docker login registry.aquasec.com -u ${{ secrets.AQUA_REG_USER }} -p ${{ secrets.AQUA_REG_PW }}
-          docker run -v ./artifacts:/tmp -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --socket docker --htmlfile /tmp/image-scan_${{ github.run_number }}.html
+        #run: |
+        #  docker login registry.aquasec.com -u ${{ secrets.AQUA_REG_USER }} -p ${{ secrets.AQUA_REG_PW }}
+        #  docker run -v ./artifacts:/tmp -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --socket docker --htmlfile /tmp/image-scan_${{ github.run_number }}.html
         #  docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker
         # alternatively, using CLI scanner:
-        # run: |
-        #   wget --user ${{ secrets.AQUA_REG_USER }} --password ${{ secrets.AQUA_REG_PW }} https://download.aquasec.com/scanner/2022.4.720/scannercli
-        #   chmod +x scannercli
-        #   sudo mkdir /opt/aquascans
-        #   sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local
+        run: |
+          wget --user ${{ secrets.AQUA_REG_USER }} --password ${{ secrets.AQUA_REG_PW }} https://download.aquasec.com/scanner/2507.4.21/scannercli
+          chmod +x scannercli
+          sudo mkdir /opt/aquascans
+          sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local --htmlfile ./artifacts/image-scan_${{ github.run_number }}.html
 
       - name: Archive scan results
         uses: actions/upload-artifact@v4
@@ -109,13 +110,14 @@ jobs:
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT }}                            # gcp project name 
-          install_components: 'gke-gcloud-auth-plugin'                      # for kube auth to work
+      # Google Cloud SDK is already installed in runner ...
+      #- name: Set up Cloud SDK
+      #  uses: google-github-actions/setup-gcloud@v2
+      #  with:
+      #    project_id: ${{ secrets.GCP_PROJECT }}                            # gcp project name 
+      #    install_components: 'gke-gcloud-auth-plugin'                      # for kube auth to work
 
-      - name: Push to Registry
+      - name: Push to GAR
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
         run: |
@@ -129,13 +131,20 @@ jobs:
       #    docker login quay.io -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PW }}
       #    docker push quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }}
 
-      - name: deploy to gke
+      - name: Deploy to GKE
         env:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}                                  # gcp project name 
        #   GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
        #   QUAY_USER: ${{ secrets.QUAY_USER }}
        #   QUAY_PW: ${{ secrets.QUAY_PW }}          
+       # first install google-cloud-cli-gke-gcloud-auth-plugin because it is not installed by default in the runner, then deploy
         run: |
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | \
+          sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+          sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+          sudo apt-get update
+          sudo apt-get install google-cloud-cli-gke-gcloud-auth-plugin
           gcloud container clusters get-credentials cluster-1 --zone us-central1-f --project ${{ secrets.GCP_PROJECT }}
           # gcloud auth configure-docker us-central1-docker.pkg.dev
           helm upgrade \
