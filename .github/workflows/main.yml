@@ -84,7 +84,7 @@ jobs:
           #export TRIVY_PASSWORD=${TRIVY_PASSWORD}
           #export TRIVY_RUN_AS_PLUGIN=aqua
           #export trivyVersion=0.62.1 (# or higher)
-          export trivyVersion=0.67.0 (# or higher)          
+          export trivyVersion=0.67.0
           # separate download from scan step later for timing ...
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b . v${trivyVersion}
           # adding credentials and flags to use aqua registry for trivy db download instead of ghcr to avoid rate limit issues
