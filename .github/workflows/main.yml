@@ -17,14 +17,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Download Code Scanner
-        run: docker pull aquasec/aqua-scanner
+      #- name: Download Code Scanner
+      #  run: docker pull aquasec/aqua-scanner
 
       # log system environment to verify for next step what values could be used for name suffix and label in docker run command
       #- name: Print all environment variables
       #  run: printenv
 
-      - name: Scan Code
+      #- name: Scan Code
         # not using below action to split into download and scan steps for timing purposes
         # uses: docker://aquasec/aqua-scanner
         # with:
@@ -36,33 +36,65 @@ jobs:
           # To enable reachability scanning, add: --reachability
           # To enable npm/dotnet/gradle non-lock file scanning, add: --package-json / --dotnet-proj / --gradle
           # For http/https proxy configuration add env vars: HTTP_PROXY/HTTPS_PROXY, CA-CRET (path to CA certificate)
+      #  env:
+      #    AQUA_KEY: ${{ secrets.AQUA_KEY }}
+      #    AQUA_SECRET: ${{ secrets.AQUA_SECRET }}
+      #    GITHUB_TOKEN: ${{ github.token }}
+      #    AQUA_URL: https://api.eu-1.supply-chain.cloud.aquasec.com
+      #    CSPM_URL: https://eu-1.api.cloudsploit.com
+      #    TRIVY_RUN_AS_PLUGIN: 'aqua'
+      #    TRIVY_USERNAME: ${{ secrets.AQUA_REG_USER }}
+      #    TRIVY_PASSWORD: ${{ secrets.AQUA_REG_PW }}
+      #  run: |
+          #DIGEST1=$(echo -n "$GITHUB_SHA" | sha1sum | cut -c1-6)
+          # echo "Short digest: $DIGEST1"
+          #DIGEST2="aquasecaquascanner"_$(echo -n "$INVOCATION_ID" | sha1sum | cut -c1-6)
+          # echo "Name + short digest: $DIGEST2"
+          #docker run --name $DIGEST2 --label $DIGEST1 --workdir /github/workspace --rm \
+          #-e "AQUA_KEY" -e "AQUA_SECRET" -e "GITHUB_TOKEN" -e "AQUA_URL" -e "CSPM_URL" -e "TRIVY_RUN_AS_PLUGIN" -e "TRIVY_USERNAME" -e "TRIVY_PASSWORD" \
+          #-e "INPUT_ARGS" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" \
+          #-e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" \
+          #-e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" \
+          #-e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKFLOW_REF" -e "GITHUB_WORKFLOW_SHA" -e "GITHUB_REPOSITORY_ID" -e "GITHUB_TRIGGERING_ACTOR" \
+          #-e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" \
+          #-e "GITHUB_STEP_SUMMARY" -e "GITHUB_STATE" -e "GITHUB_OUTPUT" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_ENVIRONMENT" -e "RUNNER_TOOL_CACHE" \
+          #-e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e "ACTIONS_RESULTS_URL" \
+          #-e GITHUB_ACTIONS=true -e CI=true \
+          #-v "/var/run/docker.sock":"/var/run/docker.sock" -v "/home/runner/work/_temp/_github_home":"/github/home" -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" \
+          #-v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" -v "/home/runner/work/hellonode/hellonode":"/github/workspace" aquasec/aqua-scanner \
+          #trivy fs --scanners misconfig,vuln,secret,license --sast --reachability --db-repository=registry.aquasec.com/trivy-db:2 --checks-bundle-repository=registry.aquasec.com/trivy-checks:1 --java-db-repository=registry.aquasec.com/trivy-java-db:1 .
+
+      - name: Scan Code
         env:
           AQUA_KEY: ${{ secrets.AQUA_KEY }}
           AQUA_SECRET: ${{ secrets.AQUA_SECRET }}
           GITHUB_TOKEN: ${{ github.token }}
           AQUA_URL: https://api.eu-1.supply-chain.cloud.aquasec.com
           CSPM_URL: https://eu-1.api.cloudsploit.com
-          TRIVY_RUN_AS_PLUGIN: 'aqua'
           TRIVY_USERNAME: ${{ secrets.AQUA_REG_USER }}
           TRIVY_PASSWORD: ${{ secrets.AQUA_REG_PW }}
+          TRIVY_RUN_AS_PLUGIN: 'aqua'          
+        # using new Aqua (trivy) scanner binary
         run: |
-          DIGEST1=$(echo -n "$GITHUB_SHA" | sha1sum | cut -c1-6)
-          # echo "Short digest: $DIGEST1"
-          DIGEST2="aquasecaquascanner"_$(echo -n "$INVOCATION_ID" | sha1sum | cut -c1-6)
-          # echo "Name + short digest: $DIGEST2"
-          docker run --name $DIGEST2 --label $DIGEST1 --workdir /github/workspace --rm \
-          -e "AQUA_KEY" -e "AQUA_SECRET" -e "GITHUB_TOKEN" -e "AQUA_URL" -e "CSPM_URL" -e "TRIVY_RUN_AS_PLUGIN" -e "TRIVY_USERNAME" -e "TRIVY_PASSWORD" \
-          -e "INPUT_ARGS" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" \
-          -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" \
-          -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" \
-          -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKFLOW_REF" -e "GITHUB_WORKFLOW_SHA" -e "GITHUB_REPOSITORY_ID" -e "GITHUB_TRIGGERING_ACTOR" \
-          -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" \
-          -e "GITHUB_STEP_SUMMARY" -e "GITHUB_STATE" -e "GITHUB_OUTPUT" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_ENVIRONMENT" -e "RUNNER_TOOL_CACHE" \
-          -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e "ACTIONS_RESULTS_URL" \
-          -e GITHUB_ACTIONS=true -e CI=true \
-          -v "/var/run/docker.sock":"/var/run/docker.sock" -v "/home/runner/work/_temp/_github_home":"/github/home" -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" \
-          -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" -v "/home/runner/work/hellonode/hellonode":"/github/workspace" aquasec/aqua-scanner \
-          trivy fs --scanners misconfig,vuln,secret,license --sast --reachability --db-repository=registry.aquasec.com/trivy-db:2 --checks-bundle-repository=registry.aquasec.com/trivy-checks:1 --java-db-repository=registry.aquasec.com/trivy-java-db:1 .
+          #export AQUA_KEY=${AQUA_KEY}
+          #export AQUA_SECRET=${AQUA_SECRET}
+          #export AQUA_URL=${AQUA_URL}
+          #export CSPM_URL=${CSPM_URL}
+          #export TRIVY_USERNAME=${TRIVY_USERNAME}
+          #export TRIVY_PASSWORD=${TRIVY_PASSWORD}
+          #export TRIVY_RUN_AS_PLUGIN=aqua
+          #export trivyVersion=0.62.1 (# or higher)
+          export trivyVersion=0.67.0 (# or higher)          
+          # separate download from scan step later for timing ...
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b . v${trivyVersion}
+          # adding credentials and flags to use aqua registry for trivy db download instead of ghcr to avoid rate limit issues
+          ./trivy fs --scanners misconfig,vuln,secret,license --sast --package-json --reachability --db-repository=registry.aquasec.com/trivy-db:2 --checks-bundle-repository=registry.aquasec.com/trivy-checks:1 --java-db-repository=registry.aquasec.com/trivy-java-db:1 .
+          # To customize what security issues to detect (vuln,misconfig,secret,license)
+          # To customize which severities to scan for, add the following flag: --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          # To enable SAST scanning, add: --sast
+          # To enable reachability scanning, add: --reachability
+          # To enable npm/dotnet/gradle non-lock file scanning, add: --package-json / --dotnet-proj / --gradle
+          # For http/https proxy configuration add env vars: HTTP_PROXY/HTTPS_PROXY, CA-CRET (path to CA certificate)
 
       - name: Build Image
         # build & tag to GAR
