@@ -130,7 +130,8 @@ jobs:
         #  docker run -v ./artifacts:/tmp -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --socket docker --htmlfile /tmp/image-scan_${{ github.run_number }}.html
         #  docker run -v /var/run/docker.sock:/var/run/docker.sock registry.aquasec.com/scanner:latest-saas scan -H https://3772126de8.cloud.aquasec.com/ -A ${{ secrets.SCANNER_TOKEN }} --local quay.io/mmurhamm/${{ github.repository }}:${{ github.run_number }} --socket docker
         # alternatively, using CLI scanner:
-        run: sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local --htmlfile ./artifacts/image-scan_${{ github.run_number }}.html
+        #run: sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://3772126de8.cloud.aquasec.com/ us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local --htmlfile ./artifacts/image-scan_${{ github.run_number }}.html
+        run: sudo ./scannercli scan -A ${{ secrets.SCANNER_TOKEN }} -H https://cbe2cfb257.cloud.aquasec.com/ us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/${{ github.repository }}:${{ github.run_number }} --local --htmlfile ./artifacts/image-scan_${{ github.run_number }}.html
 
       - name: Archive scan results
         uses: actions/upload-artifact@v4
